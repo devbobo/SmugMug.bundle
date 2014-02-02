@@ -1,0 +1,15 @@
+####################################################################################################
+def MetadataObjectForURL(url):
+    return PhotoObject(
+            url = url
+        )
+
+####################################################################################################
+
+def MediaObjectsForURL(url):
+  Log("Called MediaObjectsForURL: " + url)
+  return [
+    MediaObject(
+      parts = [PartObject(key = url)]
+    )
+  ]
