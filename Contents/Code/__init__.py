@@ -37,7 +37,7 @@ def MainMenu():
         
         oc.add(
             DirectoryObject(
-                key     = Callback(GetFolder, nickname=user["NickName"]),
+                key     = Callback(GetFolder, nickname=user["NickName"], name=user["Name"]),
                 title   = user["Name"],
                 thumb   = uris["MediumImageUrl"] if uris != None and "MediumImageUrl" in uris else ""
             )
@@ -56,7 +56,7 @@ def MainMenu():
 ####################################################################################################
 @route('/photos/smugmug/user/{nickname}')
 @route('/photos/smugmug/user/{nickname}/{urlPath}')
-def GetFolder(nickname, urlPath=""):
+def GetFolder(nickname, urlPath="", name=None):
 
     oc = ObjectContainer()
     
@@ -70,7 +70,10 @@ def GetFolder(nickname, urlPath=""):
     root = getObjectByLocator(data)
 
     if (root != None and "Name" in root and root["Name"] != ""):
-        oc.title1 = root["Name"]
+        name = root["Name"]
+
+    if (name != None):
+        oc.title1 = name
 
     folders = getExpansionFromObjectByLocator(data, "Folders", [])
     
@@ -117,7 +120,6 @@ def GetAlbum(id):
     oc = ObjectContainer()
 
     data = Get(SMUGMUG_ALBUM_URI % id, {"_shorturis": "", "_filteruri": "AlbumImages","_filter": "Title,Uri",  "_expand": "AlbumImages%3F_shorturis%3D%26_filteruri%3DImageSizes%26_filter%3DCaption%2CTitle,AlbumImages.ImageSizes%3F_shorturis%3D%26_filteruri%3D%26_filter%3D%20MediumImageUrl%2C%20LargestImageUrl"})
-    #http://api.smugmug.com/api/v2/album/9HbmnZ?_pretty=&_expand=AlbumImages%3F_shorturis%3D%26_filteruri%3DImageSizes%26_filter%3DCaption%2CTitle,AlbumImages.ImageSizes%3F_shorturis%3D%26_filteruri%3D%26_filter%3D%20MediumImageUrl%2C%20LargestImageUrl&_filter=Title,Uri&_shorturis=&_filteruri=AlbumImages&_accept=application/json
 
     album = getObjectByLocator(data)
     
