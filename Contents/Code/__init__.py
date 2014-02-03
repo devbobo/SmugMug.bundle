@@ -47,13 +47,14 @@ def MainMenu():
     return oc
 
 ####################################################################################################
-def GetFolder(nickname, path=""):
+@route('/photos/smugmug/folder/user/{nickname}/{urlPath}')
+def GetFolder(nickname, urlPath=""):
 
     oc = ObjectContainer()
     
-    uri = SMUGMUG_FOLDER_URI % nickname % path
+    uri = SMUGMUG_FOLDER_URI % nickname % ("/" + urlPath if urlPath != "" else "")
 
-    data = Get(uri, {"_shorturis": "", "_filteruri": "Folders,FolderAlbums", "_expand": "Folders%3F_shorturis%3D%26_filter%3DName%2CUrlPath%26_filteruri%3DFolderHighlightImage,Folders.FolderHighlightImage%3F_shorturis%3D%26_filter%3D%26_filteruri%3DImageSizes,Folders.FolderHighlightImage.ImageSizes%3F_filteruri%3D%26_filter%3DMediumImageUrl,FolderAlbums%3F_shorturis%3D%26_filter%3DTitle%2CDescription%2CUri%26_filteruri%3DAlbumHighlightImage,FolderAlbums.AlbumHighlightImage%3F_shorturis%3D%26_filter%3D%26_filteruri%3DImageSizes,FolderAlbums.AlbumHighlightImage.ImageSizes%3F_filteruri%3D%26_filter%3DMediumImageUrl", })
+    data = Get(uri, {"_shorturis": "", "_filteruri": "Folders,FolderAlbums", "_expand": "Folders%3F_shorturis%3D%26_filter%3DName%2CUrlPath%26_filteruri%3DFolderHighlightImage,Folders.FolderHighlightImage%3F_shorturis%3D%26_filter%3D%26_filteruri%3DImageSizes,Folders.FolderHighlightImage.ImageSizes%3F_filteruri%3D%26_filter%3DMediumImageUrl,FolderAlbums%3F_shorturis%3D%26_filter%3DTitle%2CDescription%2CUri%26_filteruri%3DAlbumHighlightImage,FolderAlbums.AlbumHighlightImage%3F_shorturis%3D%26_filter%3D%26_filteruri%3DImageSizes,FolderAlbums.AlbumHighlightImage.ImageSizes%3F_filteruri%3D%26_filter%3DMediumImageUrl"})
 
     folders = getExpansionFromObjectByLocator(data, "Folders")
     
@@ -61,7 +62,7 @@ def GetFolder(nickname, path=""):
         uris = getExpansionFromObject(data, getExpansionByLocator(data, folder["Uris"]["FolderHighlightImage"]), "ImageSizes")
         oc.add(
             DirectoryObject(
-                key     = Callback(GetFolder, nickname=nickname, path=folder["UrlPath"]),
+                key     = Callback(GetFolder, nickname=nickname, urlPath=folder["UrlPath"][1:]),
                 title   = folder["Name"],
                 thumb   = uris["MediumImageUrl"] if uris != None and uris["MediumImageUrl"] != None else ""
             )
@@ -72,10 +73,11 @@ def GetFolder(nickname, path=""):
 
     for album in albums:
         uris = getExpansionFromObject(data, getExpansionByLocator(data, album["Uris"]["AlbumHighlightImage"]), "ImageSizes")
+        albumUri = album["Uri"][7:]
         oc.add(
             PhotoAlbumObject(
-                key         = Callback(GetPhotos, id=re.sub('.+\/', '', album["Uri"])),
-                rating_key  = album["Uri"],
+                key         = Callback(GetPhotos, id=re.sub('.+\/', '', albumUri)),
+                rating_key  = albumUri,
                 title       = album["Title"],
                 summary     = album["Description"],
                 thumb       = uris["MediumImageUrl"] if uris != None and uris["MediumImageUrl"] != None else ""
@@ -87,7 +89,7 @@ def GetFolder(nickname, path=""):
     return oc
 
 ####################################################################################################
-@route('/photos/smugmug/api/v2/album/{id}')
+@route('/photos/smugmug/album/{id}')
 def GetPhotos(id):
     oc = ObjectContainer()
 
