@@ -23,10 +23,17 @@ def MainMenu():
     for account in accounts:
         uri = SMUGMUG_USER_URI % account
         
-        data = Get(uri, {"_shorturis": "", "_filteruri": "BioImage", "_filter": "Name,NickName", "_expand": "BioImage%3F_shorturis%3D%26_filter%3D%26_filteruri%3DImageSizes,BioImage.ImageSizes%3F_filteruri%3D%26_filter%3DMediumImageUrl"})
+        try:
+            data = Get(uri, {"_shorturis": "", "_filteruri": "BioImage", "_filter": "Name,NickName", "_expand": "BioImage%3F_shorturis%3D%26_filter%3D%26_filteruri%3DImageSizes,BioImage.ImageSizes%3F_filteruri%3D%26_filter%3DMediumImageUrl"})
+        except:
+            data = Get(uri, {"_filteruri": "", "_filter": "Name,NickName"})
         
         user = getObjectByLocator(data)
-        uris = getExpansionFromObject(data, getExpansionByLocator(data, user["Uris"]["BioImage"]), "ImageSizes")
+
+        uris = None
+        
+        if ("Uris" in user and "BioImage" in user["Uris"]):
+            uris = getExpansionFromObject(data, getExpansionByLocator(data, user["Uris"]["BioImage"]), "ImageSizes")
         
         oc.add(
             DirectoryObject(
@@ -60,7 +67,11 @@ def GetFolder(nickname, urlPath=""):
     folders = getExpansionFromObjectByLocator(data, "Folders")
     
     for folder in folders:
-        uris = getExpansionFromObject(data, getExpansionByLocator(data, folder["Uris"]["FolderHighlightImage"]), "ImageSizes")
+        uris = None
+        
+        if ("Uris" in folder and "FolderHighlightImage" in folders["Uris"]):
+            uris = getExpansionFromObject(data, getExpansionByLocator(data, folder["Uris"]["FolderHighlightImage"]), "ImageSizes")
+        
         oc.add(
             DirectoryObject(
                 key     = Callback(GetFolder, nickname=nickname, urlPath=folder["UrlPath"][1:]),
@@ -73,7 +84,10 @@ def GetFolder(nickname, urlPath=""):
     albums = albums if albums != None else {}
 
     for album in albums:
-        uris = getExpansionFromObject(data, getExpansionByLocator(data, album["Uris"]["AlbumHighlightImage"]), "ImageSizes")
+        uris = None
+        
+        if ("Uris" in album and "AlbumHighlightImage" in album["Uris"]):
+            uris = getExpansionFromObject(data, getExpansionByLocator(data, album["Uris"]["AlbumHighlightImage"]), "ImageSizes")
         albumUri = album["Uri"][7:]
         oc.add(
             PhotoAlbumObject(
