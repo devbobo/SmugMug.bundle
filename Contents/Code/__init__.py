@@ -8,9 +8,9 @@ SMUGMUG_ALBUM_URI = '%s%%s/album/%%%%s!images'% SMUGMUG_URL % SMUGMUG_API_URI
 
 ####################################################################################################
 def Start():
-	ObjectContainer.title1 = 'SmugMug'
-	HTTP.CacheTime = CACHE_1HOUR
-	HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:15.0) Gecko/20100101 Firefox/15.0.1'
+    ObjectContainer.title1 = 'SmugMug'
+    HTTP.CacheTime = CACHE_1HOUR
+    HTTP.Headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:15.0) Gecko/20100101 Firefox/15.0.1'
 
 ####################################################################################################
 @handler('/photos/smugmug', 'SmugMug')
@@ -30,17 +30,17 @@ def MainMenu():
         
         oc.add(
             DirectoryObject(
-				key		= Callback(GetFolder, nickname=user["NickName"]),
-				title	= user["Name"],
+                key     = Callback(GetFolder, nickname=user["NickName"]),
+                title   = user["Name"],
                 thumb   = uris["MediumImageUrl"] if uris != None and uris["MediumImageUrl"] != None else ""
             )
         )
     
     oc.add(
         InputDirectoryObject(
-            key		= Callback(AddAccount),
-            title	= L('Add Account...'),
-            prompt	= L('Enter SmugMug NickName')
+            key     = Callback(AddAccount),
+            title   = L('Add Account...'),
+            prompt  = L('Enter SmugMug NickName')
         )
     )
 
@@ -61,8 +61,8 @@ def GetFolder(nickname, path=""):
         uris = getExpansionFromObject(data, getExpansionByLocator(data, folder["Uris"]["FolderHighlightImage"]), "ImageSizes")
         oc.add(
             DirectoryObject(
-                key		= Callback(GetFolder, nickname=nickname, path=folder["UrlPath"]),
-                title	= folder["Name"],
+                key     = Callback(GetFolder, nickname=nickname, path=folder["UrlPath"]),
+                title   = folder["Name"],
                 thumb   = uris["MediumImageUrl"] if uris != None and uris["MediumImageUrl"] != None else ""
             )
         )
@@ -74,11 +74,11 @@ def GetFolder(nickname, path=""):
         uris = getExpansionFromObject(data, getExpansionByLocator(data, album["Uris"]["AlbumHighlightImage"]), "ImageSizes")
         oc.add(
             PhotoAlbumObject(
-                key		= Callback(GetPhotos, id=re.sub('.+\/', '', album["Uri"])),
-                rating_key = album["Uri"],
-                title	= album["Title"],
-                summary = album["Description"],
-                thumb   = uris["MediumImageUrl"] if uris != None and uris["MediumImageUrl"] != None else ""
+                key         = Callback(GetPhotos, id=re.sub('.+\/', '', album["Uri"])),
+                rating_key  = album["Uri"],
+                title       = album["Title"],
+                summary     = album["Description"],
+                thumb       = uris["MediumImageUrl"] if uris != None and uris["MediumImageUrl"] != None else ""
             )
         )
 
@@ -99,10 +99,10 @@ def GetPhotos(id):
         uris = getExpansionFromObject(data, photo, "ImageSizes")
         oc.add(
             PhotoObject(
-                thumb = uris["MediumImageUrl"],
-                title = photo["Title"],
+                thumb   = uris["MediumImageUrl"],
+                title   = photo["Title"],
                 summary = photo["Caption"],
-                url = uris["LargestImageUrl"]
+                url     = uris["LargestImageUrl"]
             )
         )
 
