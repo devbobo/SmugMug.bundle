@@ -1,4 +1,8 @@
 ####################################################################################################
+def NormalizeURL(url):
+    return url
+
+####################################################################################################
 def MetadataObjectForURL(url):
     return PhotoObject(
             url = url
@@ -7,7 +11,6 @@ def MetadataObjectForURL(url):
 ####################################################################################################
 
 def MediaObjectsForURL(url):
-  Log("Called MediaObjectsForURL: " + url)
   return [
     MediaObject(
       parts = [PartObject(key = url)]

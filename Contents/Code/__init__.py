@@ -47,7 +47,8 @@ def MainMenu():
     return oc
 
 ####################################################################################################
-@route('/photos/smugmug/folder/user/{nickname}/{urlPath}')
+@route('/photos/smugmug/user/{nickname}')
+@route('/photos/smugmug/user/{nickname}/{urlPath}')
 def GetFolder(nickname, urlPath=""):
 
     oc = ObjectContainer()
@@ -76,7 +77,7 @@ def GetFolder(nickname, urlPath=""):
         albumUri = album["Uri"][7:]
         oc.add(
             PhotoAlbumObject(
-                key         = Callback(GetPhotos, id=re.sub('.+\/', '', albumUri)),
+                key         = Callback(GetAlbum, id=re.sub('.+\/', '', albumUri)),
                 rating_key  = albumUri,
                 title       = album["Title"],
                 summary     = album["Description"],
@@ -90,10 +91,10 @@ def GetFolder(nickname, urlPath=""):
 
 ####################################################################################################
 @route('/photos/smugmug/album/{id}')
-def GetPhotos(id):
+def GetAlbum(id):
     oc = ObjectContainer()
 
-    data = Get(SMUGMUG_ALBUM_URI % id, {"_shorturis": "", "_expand": "ImageSizes%3F_shorturis%3D%26_filteruri%3D%26_filter%3D%20MediumImageUrl%2C%20LargestImageUrl"})
+    data = Get(SMUGMUG_ALBUM_URI % id, {"_shorturis": "", "_filteruri": "ImageSizes","_filter": "Caption,Title,Uri",  "_expand": "ImageSizes%3F_shorturis%3D%26_filteruri%3D%26_filter%3D%20MediumImageUrl%2C%20LargestImageUrl"})
 
     photos = getObjectByLocator(data)
     
@@ -101,10 +102,10 @@ def GetPhotos(id):
         uris = getExpansionFromObject(data, photo, "ImageSizes")
         oc.add(
             PhotoObject(
-                thumb   = uris["MediumImageUrl"],
+                thumb   = uris["MediumImageUrl"] if uris != None and uris["MediumImageUrl"] != None else "",
                 title   = photo["Title"],
                 summary = photo["Caption"],
-                url     = uris["LargestImageUrl"]
+                url     = uris["LargestImageUrl"] if uris != None and uris["LargestImageUrl"] != None else ""
             )
         )
 
