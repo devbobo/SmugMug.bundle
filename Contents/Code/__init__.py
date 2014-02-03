@@ -4,7 +4,7 @@ SMUGMUG_URL = 'http://api.smugmug.com'
 SMUGMUG_API_URI = '/api/v2'
 SMUGMUG_USER_URI = '%s%%s/user/%%%%s' % SMUGMUG_URL % SMUGMUG_API_URI
 SMUGMUG_FOLDER_URI = '%s%%s/folder/user/%%%%s%%%%%%%%s' % SMUGMUG_URL % SMUGMUG_API_URI
-SMUGMUG_ALBUM_URI = '%s%%s/album/%%%%s!images'% SMUGMUG_URL % SMUGMUG_API_URI
+SMUGMUG_ALBUM_URI = '%s%%s/album/%%%%s'% SMUGMUG_URL % SMUGMUG_API_URI
 
 ####################################################################################################
 def Start():
@@ -67,6 +67,11 @@ def GetFolder(nickname, urlPath=""):
     except:
         data = None
 
+    root = getObjectByLocator(data)
+
+    if (root != None and "Name" in root and root["Name"] != ""):
+        oc.title1 = root["Name"]
+
     folders = getExpansionFromObjectByLocator(data, "Folders", [])
     
     for folder in folders:
@@ -84,7 +89,6 @@ def GetFolder(nickname, urlPath=""):
         )
     
     albums = getExpansionFromObjectByLocator(data, "FolderAlbums", [])
-    albums = albums if albums != None else {}
 
     for album in albums:
         uris = None
@@ -112,12 +116,20 @@ def GetFolder(nickname, urlPath=""):
 def GetAlbum(id):
     oc = ObjectContainer()
 
-    data = Get(SMUGMUG_ALBUM_URI % id, {"_shorturis": "", "_filteruri": "ImageSizes","_filter": "Caption,Title,Uri",  "_expand": "ImageSizes%3F_shorturis%3D%26_filteruri%3D%26_filter%3D%20MediumImageUrl%2C%20LargestImageUrl"})
+    data = Get(SMUGMUG_ALBUM_URI % id, {"_shorturis": "", "_filteruri": "AlbumImages","_filter": "Title,Uri",  "_expand": "AlbumImages%3F_shorturis%3D%26_filteruri%3DImageSizes%26_filter%3DCaption%2CTitle,AlbumImages.ImageSizes%3F_shorturis%3D%26_filteruri%3D%26_filter%3D%20MediumImageUrl%2C%20LargestImageUrl"})
+    #http://api.smugmug.com/api/v2/album/9HbmnZ?_pretty=&_expand=AlbumImages%3F_shorturis%3D%26_filteruri%3DImageSizes%26_filter%3DCaption%2CTitle,AlbumImages.ImageSizes%3F_shorturis%3D%26_filteruri%3D%26_filter%3D%20MediumImageUrl%2C%20LargestImageUrl&_filter=Title,Uri&_shorturis=&_filteruri=AlbumImages&_accept=application/json
 
-    photos = getObjectByLocator(data, [])
+    album = getObjectByLocator(data)
+    
+    if (album != None and "Title" in album and album["Title"] != ""):
+        oc.title1 = album["Title"]
+    
+    photos = getExpansionFromObjectByLocator(data, "AlbumImages", [])
     
     for photo in photos:
-        uris = getExpansionFromObject(data, photo, "ImageSizes")
+        if ("Uris" in photo and "ImageSizes" in photo["Uris"]):
+            uris = getExpansionFromObject(data, photo, "ImageSizes")
+        
         oc.add(
             PhotoObject(
                 thumb   = uris["MediumImageUrl"] if uris != None and "MediumImageUrl" in uris else "",
