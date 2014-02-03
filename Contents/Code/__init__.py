@@ -39,7 +39,7 @@ def MainMenu():
             DirectoryObject(
                 key     = Callback(GetFolder, nickname=user["NickName"]),
                 title   = user["Name"],
-                thumb   = uris["MediumImageUrl"] if uris != None and uris["MediumImageUrl"] != None else ""
+                thumb   = uris["MediumImageUrl"] if uris != None and "MediumImageUrl" in uris else ""
             )
         )
     
@@ -62,25 +62,28 @@ def GetFolder(nickname, urlPath=""):
     
     uri = SMUGMUG_FOLDER_URI % nickname % ("/" + urlPath if urlPath != "" else "")
 
-    data = Get(uri, {"_shorturis": "", "_filteruri": "Folders,FolderAlbums", "_expand": "Folders%3F_shorturis%3D%26_filter%3DName%2CUrlPath%26_filteruri%3DFolderHighlightImage,Folders.FolderHighlightImage%3F_shorturis%3D%26_filter%3D%26_filteruri%3DImageSizes,Folders.FolderHighlightImage.ImageSizes%3F_filteruri%3D%26_filter%3DMediumImageUrl,FolderAlbums%3F_shorturis%3D%26_filter%3DTitle%2CDescription%2CUri%26_filteruri%3DAlbumHighlightImage,FolderAlbums.AlbumHighlightImage%3F_shorturis%3D%26_filter%3D%26_filteruri%3DImageSizes,FolderAlbums.AlbumHighlightImage.ImageSizes%3F_filteruri%3D%26_filter%3DMediumImageUrl"})
+    try:
+        data = Get(uri, {"_shorturis": "", "_filteruri": "Folders,FolderAlbums", "_expand": "Folders%3F_shorturis%3D%26_filter%3DName%2CUrlPath%26_filteruri%3DFolderHighlightImage,Folders.FolderHighlightImage%3F_shorturis%3D%26_filter%3D%26_filteruri%3DImageSizes,Folders.FolderHighlightImage.ImageSizes%3F_filteruri%3D%26_filter%3DMediumImageUrl,FolderAlbums%3F_shorturis%3D%26_filter%3DTitle%2CDescription%2CUri%26_filteruri%3DAlbumHighlightImage,FolderAlbums.AlbumHighlightImage%3F_shorturis%3D%26_filter%3D%26_filteruri%3DImageSizes,FolderAlbums.AlbumHighlightImage.ImageSizes%3F_filteruri%3D%26_filter%3DMediumImageUrl"})
+    except:
+        data = None
 
-    folders = getExpansionFromObjectByLocator(data, "Folders")
+    folders = getExpansionFromObjectByLocator(data, "Folders", [])
     
     for folder in folders:
         uris = None
         
-        if ("Uris" in folder and "FolderHighlightImage" in folders["Uris"]):
+        if ("Uris" in folder and "FolderHighlightImage" in folder["Uris"]):
             uris = getExpansionFromObject(data, getExpansionByLocator(data, folder["Uris"]["FolderHighlightImage"]), "ImageSizes")
         
         oc.add(
             DirectoryObject(
                 key     = Callback(GetFolder, nickname=nickname, urlPath=folder["UrlPath"][1:]),
                 title   = folder["Name"],
-                thumb   = uris["MediumImageUrl"] if uris != None and uris["MediumImageUrl"] != None else ""
+                thumb   = uris["MediumImageUrl"] if uris != None and "MediumImageUrl" in uris else ""
             )
         )
     
-    albums = getExpansionFromObjectByLocator(data, "FolderAlbums")
+    albums = getExpansionFromObjectByLocator(data, "FolderAlbums", [])
     albums = albums if albums != None else {}
 
     for album in albums:
@@ -88,6 +91,7 @@ def GetFolder(nickname, urlPath=""):
         
         if ("Uris" in album and "AlbumHighlightImage" in album["Uris"]):
             uris = getExpansionFromObject(data, getExpansionByLocator(data, album["Uris"]["AlbumHighlightImage"]), "ImageSizes")
+        
         albumUri = album["Uri"][7:]
         oc.add(
             PhotoAlbumObject(
@@ -95,7 +99,7 @@ def GetFolder(nickname, urlPath=""):
                 rating_key  = albumUri,
                 title       = album["Title"],
                 summary     = album["Description"],
-                thumb       = uris["MediumImageUrl"] if uris != None and uris["MediumImageUrl"] != None else ""
+                thumb       = uris["MediumImageUrl"] if uris != None and "MediumImageUrl" in uris else ""
             )
         )
 
@@ -110,16 +114,16 @@ def GetAlbum(id):
 
     data = Get(SMUGMUG_ALBUM_URI % id, {"_shorturis": "", "_filteruri": "ImageSizes","_filter": "Caption,Title,Uri",  "_expand": "ImageSizes%3F_shorturis%3D%26_filteruri%3D%26_filter%3D%20MediumImageUrl%2C%20LargestImageUrl"})
 
-    photos = getObjectByLocator(data)
+    photos = getObjectByLocator(data, [])
     
     for photo in photos:
         uris = getExpansionFromObject(data, photo, "ImageSizes")
         oc.add(
             PhotoObject(
-                thumb   = uris["MediumImageUrl"] if uris != None and uris["MediumImageUrl"] != None else "",
+                thumb   = uris["MediumImageUrl"] if uris != None and "MediumImageUrl" in uris else "",
                 title   = photo["Title"],
                 summary = photo["Caption"],
-                url     = uris["LargestImageUrl"] if uris != None and uris["LargestImageUrl"] != None else ""
+                url     = uris["LargestImageUrl"] if uris != None and "LargestImageUrl" in uris else ""
             )
         )
 
@@ -159,44 +163,44 @@ def Get(uri, params={}):
     return json
 
 ####################################################################################################
-def getExpansionByLocator(data, key):
+def getExpansionByLocator(data, key, overrideObject=None):
 
     if data == None or not("Expansions" in data) or key == None:
-        return None
+        return overrideObject
 
     expansion = data["Expansions"][key] if key in data["Expansions"] else None
     
     if expansion == None:
-        return None
+        return overrideObject
     
     locator = expansion["Locator"]
-    defaultObject = {} if "LocatorType" in expansion and expansion["LocatorType"] == 'Objects' else None
+    defaultObject = [] if "LocatorType" in expansion and expansion["LocatorType"] == 'Objects' else overrideObject
     
     return expansion[locator] if locator in expansion else defaultObject
 
 ####################################################################################################
-def getExpansionFromObject(data, object, key):
+def getExpansionFromObject(data, object, key, overrideObject=None):
     index = object["Uris"][key] if object != None and "Uris" in object and key in object["Uris"] else None
-    item = getExpansionByLocator(data, index)
+    item = getExpansionByLocator(data, index, overrideObject)
     
     return item
 
 ####################################################################################################
-def getExpansionFromObjectByLocator(data, key):
+def getExpansionFromObjectByLocator(data, key, overrideObject=None):
     
     object = getObjectByLocator(data)
-    item = getExpansionFromObject(data, object, key)
+    item = getExpansionFromObject(data, object, key, overrideObject)
 
     return item
 
 ####################################################################################################
-def getObjectByLocator(data):
+def getObjectByLocator(data, overrideObject=None):
 
     if data == None or not "Response" in data:
-        return None
+        return overrideObject
     
     locator = data["Response"]["Locator"]
-    defaultObject = {} if "LocatorType" in data["Response"] and data["Response"]["LocatorType"] == 'Objects' else None
+    defaultObject = {} if "LocatorType" in data["Response"] and data["Response"]["LocatorType"] == 'Objects' else overrideObject
     
     return data["Response"][locator] if locator in data["Response"] else defaultObject
 
