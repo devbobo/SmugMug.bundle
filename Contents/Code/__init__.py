@@ -1,18 +1,24 @@
 import re
+from urllib import quote
 
 SMUGMUG_PREFIX = '/photos/smugmug'
 SMUGMUG_URL = 'http://api.smugmug.com'
 SMUGMUG_API_URI = '/api/v2'
-SMUGMUG_USER_URL = '%s%%s/user/%%%%s' % SMUGMUG_URL % SMUGMUG_API_URI
+
 SMUGMUG_FOLDER_URL = '%s%%s/folder/user/%%%%s%%%%%%%%s' % SMUGMUG_URL % SMUGMUG_API_URI
 SMUGMUG_ALBUM_URL = '%s%%s/album/%%%%s'% SMUGMUG_URL % SMUGMUG_API_URI
-SMUGMUG_FEATURED_URL = '%s!featuredalbums' % SMUGMUG_USER_URL
-SMUGMUG_POPULAR_URL = '%s!popularmedia' % SMUGMUG_USER_URL
+
+SMUGMUG_USER_URL = '%s%%s/user/%%%%s' % SMUGMUG_URL % SMUGMUG_API_URI
+SMUGMUG_USER_FEATURED_URL = '%s!featuredalbums' % SMUGMUG_USER_URL
+SMUGMUG_USER_POPULAR_URL = '%s!popularmedia' % SMUGMUG_USER_URL
+SMUGMUG_USER_SEARCH_URL = '%s!imagesearch' % SMUGMUG_USER_URL
+
+SMUGMUG_ALBUM_URI = '/album/%s'
 
 SMUGMUG_USER_URI = '/user/%s'
-SMUGMUG_ALBUM_URI = '/album/%s'
-SMUGMUG_FEATURED_URI = '%s/featured' % SMUGMUG_USER_URI
-SMUGMUG_POPULAR_URI = '%s/popular' % SMUGMUG_USER_URI
+SMUGMUG_USER_FEATURED_URI = '%s/featured' % SMUGMUG_USER_URI
+SMUGMUG_USER_POPULAR_URI = '%s/popular' % SMUGMUG_USER_URI
+SMUGMUG_USER_SEARCH_URI = '%s/search/%%%%s' % SMUGMUG_USER_URI
 
 ####################################################################################################
 def Start():
@@ -66,14 +72,14 @@ def MainMenu():
 def GetUser(nickname):
 
     oc = ObjectContainer()
-    
+
     uri = SMUGMUG_USER_URL % nickname
-    
+
     try:
         data = Get(uri, {"_filteruri": "", "_filter": "Name,NickName"})
     except:
         data = None
-    
+
     user = getObjectByLocator(data)
 
     oc.title1 = user["Name"]
@@ -95,17 +101,23 @@ def GetUser(nickname):
     oc.add(
         PhotoAlbumObject(
             key         = Callback(GetPopular, nickname=user["NickName"]),
-            rating_key  = SMUGMUG_PREFIX + SMUGMUG_POPULAR_URI % user["NickName"],
+            rating_key  = SMUGMUG_PREFIX + SMUGMUG_USER_POPULAR_URI % user["NickName"],
             title       = L("Popular"),
         )
-   )
+    )
+
+    oc.add(
+       InputDirectoryObject(
+            key         = Callback(GetUserSearch, nickname=user["NickName"]),
+            title       = L("Search"),
+        )
+    )
 
     return oc
 
 
 ####################################################################################################
-@route(SMUGMUG_PREFIX + SMUGMUG_USER_URI % '{nickname}' + '/gallery')
-@route(SMUGMUG_PREFIX + SMUGMUG_USER_URI % '{nickname}' + '/gallery/{urlPath}')
+@route(SMUGMUG_PREFIX + SMUGMUG_USER_URI % '{nickname}' + '/folder')
 def GetFolder(nickname, urlPath=""):
 
     oc = ObjectContainer(title1=L("Galleries"))
@@ -117,33 +129,23 @@ def GetFolder(nickname, urlPath=""):
     except:
         data = None
 
-    folders = getExpansionFromObjectByLocator(data, "Folders", [])
+    root = getObjectByLocator(data)
 
-    for folder in folders:
-        uris = None
-        
-        if ("Uris" in folder and "FolderHighlightImage" in folder["Uris"]):
-            uris = getExpansionFromObject(data, getExpansionByLocator(data, folder["Uris"]["FolderHighlightImage"]), "ImageSizes")
-        
-        oc.add(
-            DirectoryObject(
-                key     = Callback(GetFolder, nickname=nickname, urlPath=folder["UrlPath"][1:]),
-                title   = folder["Name"],
-                thumb   = uris["MediumImageUrl"] if uris != None and "MediumImageUrl" in uris else ""
-            )
-        )
+    if ("Name" in root and root["Name"] != "Root Node"):
+        oc.title1 = root["Name"]
 
+    iterateFolders(oc, data, getExpansionFromObjectByLocator(data, "Folders", []), nickname)
     iterateAlbums(oc, data, getExpansionFromObjectByLocator(data, "FolderAlbums", []))
 
     return oc
 
 ####################################################################################################
-@route(SMUGMUG_PREFIX + SMUGMUG_FEATURED_URI % '{nickname}')
+@route(SMUGMUG_PREFIX + SMUGMUG_USER_FEATURED_URI % '{nickname}')
 def GetFeatured(nickname):
     
     oc = ObjectContainer(title1=L("Featured"))
 
-    uri = SMUGMUG_FEATURED_URL % nickname
+    uri = SMUGMUG_USER_FEATURED_URL % nickname
 
     try:
         data = Get(uri, {"_shorturis": "", "_filter": "Title,Description,Uri", "_filteruri": "AlbumHighlightImage", "_expand": "AlbumHighlightImage&_expand=AlbumHighlightImage%3F_shorturis%3D%26_filteruri%3DImageSizes%26_filter%3D,AlbumHighlightImage.ImageSizes%3F_filteruri%3D%26_filter%3DMediumImageUrl"})
@@ -155,31 +157,37 @@ def GetFeatured(nickname):
 ####################################################################################################
 @route(SMUGMUG_PREFIX + SMUGMUG_ALBUM_URI % '{id}')
 def GetAlbum(id):
-    oc = ObjectContainer()
-
-    data = Get(SMUGMUG_ALBUM_URL % id, {"_shorturis": "", "_filteruri": "AlbumImages","_filter": "Title,Uri",  "_expand": "AlbumImages%3F_shorturis%3D%26_filteruri%3DImageSizes%26_filter%3DCaption%2CTitle,AlbumImages.ImageSizes%3F_shorturis%3D%26_filteruri%3D%26_filter%3D%20MediumImageUrl%2CLargestImageUrl"})
+    try:
+        data = Get(SMUGMUG_ALBUM_URL % id, {"_shorturis": "", "_filteruri": "AlbumImages","_filter": "Title,Uri",  "_expand": "AlbumImages%3F_shorturis%3D%26_filteruri%3DImageSizes%26_filter%3DCaption%2CTitle,AlbumImages.ImageSizes%3F_shorturis%3D%26_filteruri%3D%26_filter%3D%20MediumImageUrl%2CLargestImageUrl"})
+    except:
+        data = None
 
     album = getObjectByLocator(data)
-    
-    if (album != None and "Title" in album and album["Title"] != ""):
-        oc.title1 = album["Title"]
-    
-    return iterateImages(oc, data, getExpansionFromObjectByLocator(data, "AlbumImages", []))
+
+    return iterateImages(ObjectContainer(title1 = album["Title"]), data, getExpansionFromObjectByLocator(data, "AlbumImages", []))
 
 ####################################################################################################
-@route(SMUGMUG_PREFIX + SMUGMUG_POPULAR_URI % '{nickname}')
+@route(SMUGMUG_PREFIX + SMUGMUG_USER_POPULAR_URI % '{nickname}')
 def GetPopular(nickname):
-    
-    oc = ObjectContainer(title1=L("Popular"))
-    
-    uri = SMUGMUG_POPULAR_URL % nickname
-    
+
     try:
-        data = Get(uri, {"_shorturis": "", "_filter": "Caption,Title", "_filteruri": "ImageSizes", "_expand": "ImageSizes%3F_filteruri%3D%26_filter%3DMediumImageUrl%2CLargestImageUrl"})
+        data = Get(SMUGMUG_USER_POPULAR_URL % nickname, {"_shorturis": "", "_filter": "Caption,Title", "_filteruri": "ImageSizes", "_expand": "ImageSizes%3F_filteruri%3D%26_filter%3DMediumImageUrl%2CLargestImageUrl"})
     except:
         data = None
     
-    return iterateImages(oc, data, getObjectByLocator(data, []))
+    return iterateImages(ObjectContainer(title1=L("Popular")), data, getObjectByLocator(data, []))
+
+####################################################################################################
+@route(SMUGMUG_PREFIX + SMUGMUG_USER_URI % '{nickname}' + '/search')
+@route(SMUGMUG_PREFIX + SMUGMUG_USER_SEARCH_URI % '{nickname}' % '{query}')
+def GetUserSearch(nickname, query):
+    
+    try:
+        data = Get(SMUGMUG_USER_SEARCH_URL % nickname, {"q": quote(query), "Order": "Newest", "_shorturis": "", "_filter": "Caption,Title", "_filteruri": "ImageSizes", "_expand": "ImageSizes%3F_filteruri%3D%26_filter%3DMediumImageUrl%2CLargestImageUrl"})
+    except:
+        data = None
+    
+    return iterateImages(ObjectContainer(title1=L("Search")), data, getObjectByLocator(data, []))
 
 ####################################################################################################
 def AddAccount(query):
@@ -210,9 +218,7 @@ def Get(uri, params={}):
     for key in params:
         query += key + "=" + params[key] + "&"
 
-    json = JSON.ObjectFromURL(uri + query)
-
-    return json
+    return JSON.ObjectFromURL(uri + query)
 
 ####################################################################################################
 def iterateAlbums(oc, data, albums):
@@ -236,6 +242,27 @@ def iterateAlbums(oc, data, albums):
         )
 
     oc.objects.sort(key = lambda obj: obj.title)
+
+    return oc
+
+####################################################################################################
+def iterateFolders(oc, data, folders, nickname):
+    
+    folders = getExpansionFromObjectByLocator(data, "Folders", [])
+    
+    for folder in folders:
+        uris = None
+        
+        if ("Uris" in folder and "FolderHighlightImage" in folder["Uris"]):
+            uris = getExpansionFromObject(data, getExpansionByLocator(data, folder["Uris"]["FolderHighlightImage"]), "ImageSizes")
+        
+        oc.add(
+           DirectoryObject(
+               key     = Callback(GetFolder, nickname=nickname, urlPath=folder["UrlPath"][1:]),
+               title   = folder["Name"],
+               thumb   = uris["MediumImageUrl"] if uris != None and "MediumImageUrl" in uris else ""
+           )
+       )
 
     return oc
 
