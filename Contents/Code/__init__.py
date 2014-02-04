@@ -53,7 +53,7 @@ def MainMenu():
             DirectoryObject(
                 key     = Callback(GetUser, nickname=user["NickName"]),
                 title   = user["Name"],
-                thumb   = uris["MediumImageUrl"] if uris != None and "MediumImageUrl" in uris else ""
+                thumb   = uris["MediumImageUrl"] if uris != None and "MediumImageUrl" in uris else R("icon-default.png")
             )
         )
     
@@ -61,7 +61,8 @@ def MainMenu():
         InputDirectoryObject(
             key     = Callback(AddAccount),
             title   = L('Add Account...'),
-            prompt  = L('Enter SmugMug NickName')
+            prompt  = L('Enter SmugMug NickName'),
+            thumb   = R("icon-default.png")
         )
     )
 
@@ -87,7 +88,8 @@ def GetUser(nickname):
     oc.add(
         DirectoryObject(
             key     = Callback(GetFolder, nickname=user["NickName"]),
-            title   = L("Galleries")
+            title   = L("Galleries"),
+            thumb   = R("icon-default.png")
         )
     )
 
@@ -95,7 +97,7 @@ def GetUser(nickname):
        DirectoryObject(
             key     = Callback(GetFeatured, nickname=user["NickName"]),
             title   = L("Featured"),
-            thumb   = R("Favorite.png")
+            thumb   = R("icon-default.png")
         )
     )
 
@@ -104,15 +106,15 @@ def GetUser(nickname):
             key         = Callback(GetPopular, nickname=user["NickName"]),
             rating_key  = SMUGMUG_PREFIX + SMUGMUG_USER_POPULAR_URI % user["NickName"],
             title       = L("Popular"),
-            thumb       = R("Popular.png")
+            thumb       = R("icon-default.png")
         )
     )
 
     oc.add(
-       InputDirectoryObject(
+        InputDirectoryObject(
             key         = Callback(GetUserSearch, nickname=user["NickName"]),
             title       = L("Search"),
-            thumb       = R("Search.png")
+            thumb       = R("icon-default.png")
         )
     )
 
@@ -238,7 +240,7 @@ def iterateAlbums(oc, data, albums):
                 rating_key  = SMUGMUG_PREFIX + albumUri,
                 title       = album["Title"],
                 summary     = album["Description"],
-                thumb       = uris["MediumImageUrl"] if uris != None and "MediumImageUrl" in uris else ""
+                thumb       = uris["MediumImageUrl"] if uris != None and "MediumImageUrl" in uris else R("icon-default.png")
             )
         )
 
@@ -261,7 +263,7 @@ def iterateFolders(oc, data, folders, nickname):
            DirectoryObject(
                key     = Callback(GetFolder, nickname=nickname, uri=folder["UrlPath"]),
                title   = folder["Name"],
-               thumb   = uris["MediumImageUrl"] if uris != None and "MediumImageUrl" in uris else ""
+               thumb   = uris["MediumImageUrl"] if uris != None and "MediumImageUrl" in uris else R("icon-default.png")
            )
        )
 
@@ -278,7 +280,7 @@ def iterateImages(oc, data, images):
                thumb   = uris["MediumImageUrl"] if uris != None and "MediumImageUrl" in uris else "",
                title   = image["Title"],
                summary = image["Caption"],
-               url     = uris["LargestImageUrl"] if uris != None and "LargestImageUrl" in uris else ""
+               url     = uris["LargestImageUrl"] if uris != None and "LargestImageUrl" in uris else R("icon-default.png")
                )
            )
 
