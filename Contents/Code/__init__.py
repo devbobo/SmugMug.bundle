@@ -118,14 +118,12 @@ def GetUser(nickname):
 
 ####################################################################################################
 @route(SMUGMUG_PREFIX + SMUGMUG_USER_URI % '{nickname}' + '/folder')
-def GetFolder(nickname, urlPath=""):
+def GetFolder(nickname, uri=""):
 
     oc = ObjectContainer(title1=L("Galleries"))
 
-    uri = SMUGMUG_FOLDER_URL % nickname % ("/" + urlPath if urlPath != "" else "")
-
     try:
-        data = Get(uri, {"_shorturis": "", "_filteruri": "Folders,FolderAlbums", "_expand": "Folders%3F_shorturis%3D%26_filter%3DName%2CUrlPath%26_filteruri%3DFolderHighlightImage,Folders.FolderHighlightImage%3F_shorturis%3D%26_filter%3D%26_filteruri%3DImageSizes,Folders.FolderHighlightImage.ImageSizes%3F_filteruri%3D%26_filter%3DMediumImageUrl,FolderAlbums%3F_shorturis%3D%26_filter%3DTitle%2CDescription%2CUri%26_filteruri%3DAlbumHighlightImage,FolderAlbums.AlbumHighlightImage%3F_shorturis%3D%26_filter%3D%26_filteruri%3DImageSizes,FolderAlbums.AlbumHighlightImage.ImageSizes%3F_filteruri%3D%26_filter%3DMediumImageUrl"})
+        data = Get(SMUGMUG_FOLDER_URL % nickname % uri, {"_shorturis": "", "_filteruri": "Folders,FolderAlbums", "_expand": "Folders%3F_shorturis%3D%26_filter%3DName%2CUrlPath%26_filteruri%3DFolderHighlightImage,Folders.FolderHighlightImage%3F_shorturis%3D%26_filter%3D%26_filteruri%3DImageSizes,Folders.FolderHighlightImage.ImageSizes%3F_filteruri%3D%26_filter%3DMediumImageUrl,FolderAlbums%3F_shorturis%3D%26_filter%3DTitle%2CDescription%2CUri%26_filteruri%3DAlbumHighlightImage,FolderAlbums.AlbumHighlightImage%3F_shorturis%3D%26_filter%3D%26_filteruri%3DImageSizes,FolderAlbums.AlbumHighlightImage.ImageSizes%3F_filteruri%3D%26_filter%3DMediumImageUrl"})
     except:
         data = None
 
@@ -258,7 +256,7 @@ def iterateFolders(oc, data, folders, nickname):
         
         oc.add(
            DirectoryObject(
-               key     = Callback(GetFolder, nickname=nickname, urlPath=folder["UrlPath"][1:]),
+               key     = Callback(GetFolder, nickname=nickname, uri=folder["UrlPath"]),
                title   = folder["Name"],
                thumb   = uris["MediumImageUrl"] if uris != None and "MediumImageUrl" in uris else ""
            )
