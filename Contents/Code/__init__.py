@@ -94,7 +94,8 @@ def GetUser(nickname):
     oc.add(
        DirectoryObject(
             key     = Callback(GetFeatured, nickname=user["NickName"]),
-            title   = L("Featured")
+            title   = L("Featured"),
+            thumb   = R("Favorite.png")
         )
     )
 
@@ -103,6 +104,7 @@ def GetUser(nickname):
             key         = Callback(GetPopular, nickname=user["NickName"]),
             rating_key  = SMUGMUG_PREFIX + SMUGMUG_USER_POPULAR_URI % user["NickName"],
             title       = L("Popular"),
+            thumb       = R("Popular.png")
         )
     )
 
@@ -110,6 +112,7 @@ def GetUser(nickname):
        InputDirectoryObject(
             key         = Callback(GetUserSearch, nickname=user["NickName"]),
             title       = L("Search"),
+            thumb       = R("Search.png")
         )
     )
 
