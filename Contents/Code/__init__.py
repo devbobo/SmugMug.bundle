@@ -108,7 +108,7 @@ def GetUser(nickname):
 @route(SMUGMUG_PREFIX + SMUGMUG_USER_URI % '{nickname}' + '/gallery/{urlPath}')
 def GetFolder(nickname, urlPath=""):
 
-    oc = ObjectContainer(title1="Galleries")
+    oc = ObjectContainer(title1=L("Galleries"))
 
     uri = SMUGMUG_FOLDER_URL % nickname % ("/" + urlPath if urlPath != "" else "")
 
@@ -141,7 +141,7 @@ def GetFolder(nickname, urlPath=""):
 @route(SMUGMUG_PREFIX + SMUGMUG_FEATURED_URI % '{nickname}')
 def GetFeatured(nickname):
     
-    oc = ObjectContainer(title1="Featured")
+    oc = ObjectContainer(title1=L("Featured"))
 
     uri = SMUGMUG_FEATURED_URL % nickname
 
@@ -170,7 +170,7 @@ def GetAlbum(id):
 @route(SMUGMUG_PREFIX + SMUGMUG_POPULAR_URI % '{nickname}')
 def GetPopular(nickname):
     
-    oc = ObjectContainer(title1="Popular")
+    oc = ObjectContainer(title1=L("Popular"))
     
     uri = SMUGMUG_POPULAR_URL % nickname
     
